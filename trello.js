@@ -182,9 +182,14 @@ const getPointsByDate = () => {
     console.error("Cards con fecha, sin puntos", cardsWithoutPointAndWithDate);
     console.error("Cards sin fecha, con puntos", cardsWithPointAndWithoutDate);
     console.warn("Cards no graficadas", cardsExcluded);
+    printCardsExcludes(cardsExcluded);
     console.error("Cards fuera de fecha valida", cardsOutOfDate);
 
     return pointsByDates;
+}
+
+const printCardsExcludes = cardsExcluded => {
+    let a = 1;
 }
 
 const getDoneList = () => dataTrelloBoard.lists.filter( l => l.name.indexOf("(Done)") !== -1 && l.closed == false ).map( l => l.id); 
@@ -210,6 +215,10 @@ const getPointsRealByDate = () => {
         );
 
         if (actions.length < 1) {
+            return;
+        }
+
+        if( excludeCard(c, doneList, validLabels, []) ){
             return;
         }
 
@@ -244,6 +253,68 @@ const getPointsRealByDate = () => {
     return pointsFinishByDates;
 }
 
+// Primero se de ordenar por trello
+const getManualPointsRealByDate = () => {
+    const doneList = getDoneList();
+    const validLabels = getValidLabels();
+
+    let doneCardsByDate = [];
+    let doneCards = dataTrelloBoard.cards.filter( c => doneList.includes(c.idList) && c.closed == false);
+    let doneCardsReverse = [...doneCards].reverse();
+    
+    let pointsByDay = 0; 
+    let day = 0; // Indice del array de fechas del sprint
+    let ixDate = ''
+    let pointsFinishByDates = {};
+
+    const currentDate = new Date();
+    currentDate.setHours(currentDate.getHours() - 5);
+    let currentDateFormat = currentDate.toISOString().split("T")[0];
+
+    doneCardsReverse.forEach( c => {
+        if( c.name.endsWith("-----") ){
+            day++;
+            ixDate = datesToGraph.filter(d => d.ix == day);
+            pointsFinishByDates[ixDate[0].d] = pointsByDay;
+            pointsByDay = 0;
+            return;
+        }
+
+        if( c.labels.length == 0 ){
+            return;
+        }
+
+        if( excludeCard(c, doneList, validLabels, []) ){
+            return;
+        }
+
+        let points = getPointsCard(c.name);
+        pointsByDay += points*1;
+
+        doneCardsByDate.push({
+            points: points == null ? 0 : points,
+            dateDone: ixDate,
+            name: c.name,
+            labels: c.labels.map( l => l.name).join(" / "),
+        });
+    });
+
+    day++;
+    ixDate = datesToGraph.filter(d => d.ix == day);
+
+    if( ixDate.length > 0 ){
+        pointsFinishByDates[ixDate[0].d] = pointsByDay;
+        pointsByDay = 0;
+    }
+
+    console.warn("Cards completadas", doneCardsByDate);
+    console.warn("Puntos finalizados por fecha", pointsFinishByDates);
+    console.error("----------Conteo manual------------");
+ 
+    return pointsFinishByDates;
+}
+
+
 const getTotalPointsInMont = (pointPlaning) => {
     let totalPoints = 0;
     datesToGraph.forEach(day => {
@@ -271,7 +342,7 @@ const printDateToGraph = data => {
 
 const generateG = () => {
     let poinstPlaning = getPointsByDate();
-    let pointReal = getPointsRealByDate();
+    let pointReal = getManualPointsRealByDate();
     let total = getTotalPointsInMont(poinstPlaning);
     totalReal = total;
 
@@ -299,8 +370,8 @@ const generateG = () => {
         const planingDayTotal = total - pointsPlaningDay;
         total = planingDayTotal;
 
-        const pointRealDay = day.d > currentDateFormat ? "" : pointReal[day.d] ? pointReal[day.d] : 0;
-        const planingRealDayTotal = day.d > currentDateFormat ? "" : totalReal - pointRealDay;
+        const pointRealDay = day.d >= currentDateFormat ? "" : pointReal[day.d] ? pointReal[day.d] : 0;
+        const planingRealDayTotal = day.d >= currentDateFormat ? "" : totalReal - pointRealDay;
         totalReal = planingRealDayTotal;
 
         jsonDataToGraph.push({ 
