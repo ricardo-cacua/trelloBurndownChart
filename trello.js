@@ -32,7 +32,8 @@ const datesToGraph = [
 ];
 
 const getPointsCard = name => {
-    const regex = /\((\d+)\)/; // Expresión regular para buscar números entre paréntesis
+    // const regex = /\((\d+)\)/; // Expresión regular para buscar números entre paréntesis
+    const regex = /^\((\d+(\.\d+)?)\)/;
     const resultado = regex.exec(name);
     if( resultado == null ){
         return null; 
