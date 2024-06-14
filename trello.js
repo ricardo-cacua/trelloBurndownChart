@@ -51,7 +51,23 @@ const printValidLabels = validLabels => {
         html += `<span>${l}</span>`
     });
 
-    $box.innerHTML = html;
+    $box.innerHTML =  html;
+}
+
+const printCardsWithError = (listCards, title, idContainer) => {
+    const $box = document.querySelector(`#${idContainer}`);
+    
+    let html = `<legend>${title}</legend>`;
+
+    listCards.forEach(c => {
+        html += `<div class="card-error">
+            <b>Nombre</b> <a href="${c.url}" target="_blank"> ${c.name} </a>
+            <b>Labels</b> <span>${c.labels}</span>
+            <b>Members</b> ${c.members.map(m => dataTrelloBoard.members.find(ml => ml.id == m).fullName).join(', ')}
+        </div>`
+    });
+
+    $box.innerHTML =  html;
 }
 
 const getValidLabels = () =>{
@@ -122,6 +138,7 @@ const getPointsByDate = () => {
     let cardsWithPointAndWithoutDate = [];
     let cardsExcluded = [];
     let cardsOutOfDate = [];
+    let cardsNoCount = [];
 
     let pointsByDates = {};
     let totalPoints = 0;
@@ -130,16 +147,17 @@ const getPointsByDate = () => {
 
     dataTrelloBoard.cards.forEach( c => {
         let points = getPointsCard(c.name);
-        if( card.closed != true && validList.includes(c.idList) ){
+        if( c.closed != true && validList.includes(c.idList) ){
             totalPoints = totalPoints + (points*1);
         }
         
         if( excludeCard(c, validList, validLabels, cardsExcluded) ){
+            cardsNoCount.push({name: c.name, list: dataTrelloBoard.lists.find( l => l.id == c.idList).name})
             return;
         }
 
         if(points == null ){
-            cardsWithoutPoint.push({name:c.name, labels : c.labels.map( l => l.name).join(" / ")});
+            cardsWithoutPoint.push({name:c.name, labels : c.labels.map( l => l.name).join(" / "), labelsList : c.labels, members: c.idMembers, url: c.url});
         }
 
         // Solo tengo en cuenta las tarjetas con fecha de terminación planeada.
@@ -147,7 +165,7 @@ const getPointsByDate = () => {
             if(points != null ){
                 cardsWithPointAndWithoutDate.push({name:c.name, labels : c.labels.map( l => l.name).join(" / ")});
             }
-            cardsWithoutDate.push({name:c.name, labels : c.labels.map( l => l.name).join(" / ")});
+            cardsWithoutDate.push({name:c.name, labels : c.labels.map( l => l.name).join(" / "), labelsList : c.labels, members: c.idMembers, url: c.url});
             return;
         }
 
@@ -177,13 +195,15 @@ const getPointsByDate = () => {
     console.warn(`PESO TOTAL : ${totalPoints},  PESO TOTAL SOLO FECHAS : ${totalPointsOnlyDates},  PESO TOTAL A GRAFICAR : ${totalPointsToGraph}`)
     console.warn("Puntos por fechas: ", pointsByDates);
     console.error("Cards sin fecha", cardsWithoutDate);
+    printCardsWithError( cardsWithoutDate, "Cards sin fecha", 'cardsWithoutDate');
     console.error("Cards sin puntos", cardsWithoutPoint);
+    printCardsWithError( cardsWithoutPoint, "Cards sin punto", 'cardsWithoutPoints');
     console.error("Cards con fecha, sin puntos", cardsWithoutPointAndWithDate);
     console.error("Cards sin fecha, con puntos", cardsWithPointAndWithoutDate);
     console.warn("Cards no graficadas", cardsExcluded);
     printCardsExcludes(cardsExcluded);
     console.error("Cards fuera de fecha valida", cardsOutOfDate);
-
+    console.warn("Cards no tenidas en cuenta", cardsNoCount); 
     return pointsByDates;
 }
 

@@ -35,6 +35,16 @@
         text-align: right;
     }
 
+    .card-error {
+        display: grid;
+        grid-template-columns: 100px auto;
+        margin: 15px 0;
+    }
+
+    fieldset {
+        margin-top: 20px;
+    }
+
 </style>
 <body>
     <h3>Data exportada de trello: </h3>
@@ -42,6 +52,8 @@
     <button type="button" id="dataTrelloGenerator">Generar</button>
     
     <fieldset id="validLabels"></fieldset>
+    <fieldset id="cardsWithoutDate"></fieldset>
+    <fieldset id="cardsWithoutPoints"></fieldset>
     <div id="dataTableToGraph"></div>
 </body>
 </html>
