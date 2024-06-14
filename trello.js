@@ -104,7 +104,7 @@ const excludeCard = (card, validList, validLabels, cardsExcludedTemp) => {
     }
 
     // Verifica que la tarjeta tenga los labels validos
-    if( !lablesTemp.every(l => validLabels.has(l))){
+    if( !lablesTemp.some(l => validLabels.has(l))){
         cardsExcludedTemp.push({ name: card.name, labels: card.labels.map(l => l.name).join(" / ") });
         return true;
     }
