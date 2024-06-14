@@ -130,8 +130,10 @@ const getPointsByDate = () => {
 
     dataTrelloBoard.cards.forEach( c => {
         let points = getPointsCard(c.name);
-        totalPoints = totalPoints + (points*1);
-
+        if( card.closed != true && validList.includes(c.idList) ){
+            totalPoints = totalPoints + (points*1);
+        }
+        
         if( excludeCard(c, validList, validLabels, cardsExcluded) ){
             return;
         }
