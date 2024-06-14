@@ -12,30 +12,27 @@ var dataTrelloBoard = {};
 var dataDates = [];
 
 const datesToGraph = [
-    { ix: 1, d:'2024-02-02'},
-    { ix: 2, d:'2024-02-05'},
-    { ix: 3, d:'2024-02-06'},
-    { ix: 4, d:'2024-02-07'},
-    { ix: 5, d:'2024-02-08'},
-    { ix: 6, d:'2024-02-09'},
-    { ix: 7, d:'2024-02-12'},
-    { ix: 8, d:'2024-02-13'},
-    { ix: 9, d:'2024-02-14'},
-    { ix: 10, d:'2024-02-15'},
-    { ix: 11, d:'2024-02-16'},
-    { ix: 12, d:'2024-02-19'},
-    { ix: 13, d:'2024-02-20'},
-    { ix: 14, d:'2024-02-21'},
-    { ix: 15, d:'2024-02-22'},
-    { ix: 16, d:'2024-02-23'},
-    { ix: 17, d:'2024-02-26'},
-    { ix: 18, d:'2024-02-27'},
-    { ix: 19, d:'2024-02-28'},
-    { ix: 20, d:'2024-02-29'},
+    { ix: 1, d:'2024-06-05'},
+    { ix: 2, d:'2024-06-06'},
+    { ix: 3, d:'2024-06-11'},
+    { ix: 4, d:'2024-06-12'},
+    { ix: 5, d:'2024-06-13'},
+    { ix: 6, d:'2024-06-14'},
+    { ix: 7, d:'2024-06-17'},
+    { ix: 8, d:'2024-06-18'},
+    { ix: 9, d:'2024-06-19'},
+    { ix: 10, d:'2024-06-20'},
+    { ix: 11, d:'2024-06-21'},
+    { ix: 12, d:'2024-06-24'},
+    { ix: 13, d:'2024-06-25'},
+    { ix: 14, d:'2024-06-26'},
+    { ix: 15, d:'2024-06-27'},
+    { ix: 16, d:'2024-06-28'},
 ];
 
 const getPointsCard = name => {
-    const regex = /\((\d+)\)/; // Expresión regular para buscar números entre paréntesis
+    // const regex = /\((\d+)\)/; // Expresión regular para buscar números entre paréntesis
+    const regex = /^\((\d+(\,\d+)?)\)/;
     const resultado = regex.exec(name);
     if( resultado == null ){
         return null; 
@@ -107,7 +104,7 @@ const excludeCard = (card, validList, validLabels, cardsExcludedTemp) => {
     }
 
     // Verifica que la tarjeta tenga los labels validos
-    if( !lablesTemp.every(l => validLabels.has(l))){
+    if( !lablesTemp.some(l => validLabels.has(l))){
         cardsExcludedTemp.push({ name: card.name, labels: card.labels.map(l => l.name).join(" / ") });
         return true;
     }
@@ -133,8 +130,10 @@ const getPointsByDate = () => {
 
     dataTrelloBoard.cards.forEach( c => {
         let points = getPointsCard(c.name);
-        totalPoints = totalPoints + (points*1);
-
+        if( card.closed != true && validList.includes(c.idList) ){
+            totalPoints = totalPoints + (points*1);
+        }
+        
         if( excludeCard(c, validList, validLabels, cardsExcluded) ){
             return;
         }
@@ -182,9 +181,14 @@ const getPointsByDate = () => {
     console.error("Cards con fecha, sin puntos", cardsWithoutPointAndWithDate);
     console.error("Cards sin fecha, con puntos", cardsWithPointAndWithoutDate);
     console.warn("Cards no graficadas", cardsExcluded);
+    printCardsExcludes(cardsExcluded);
     console.error("Cards fuera de fecha valida", cardsOutOfDate);
 
     return pointsByDates;
+}
+
+const printCardsExcludes = cardsExcluded => {
+    let a = 1;
 }
 
 const getDoneList = () => dataTrelloBoard.lists.filter( l => l.name.indexOf("(Done)") !== -1 && l.closed == false ).map( l => l.id); 
@@ -210,6 +214,10 @@ const getPointsRealByDate = () => {
         );
 
         if (actions.length < 1) {
+            return;
+        }
+
+        if( excludeCard(c, doneList, validLabels, []) ){
             return;
         }
 
@@ -244,6 +252,68 @@ const getPointsRealByDate = () => {
     return pointsFinishByDates;
 }
 
+// Primero se de ordenar por trello
+const getManualPointsRealByDate = () => {
+    const doneList = getDoneList();
+    const validLabels = getValidLabels();
+
+    let doneCardsByDate = [];
+    let doneCards = dataTrelloBoard.cards.filter( c => doneList.includes(c.idList) && c.closed == false);
+    let doneCardsReverse = [...doneCards].reverse();
+    
+    let pointsByDay = 0; 
+    let day = 0; // Indice del array de fechas del sprint
+    let ixDate = ''
+    let pointsFinishByDates = {};
+
+    const currentDate = new Date();
+    currentDate.setHours(currentDate.getHours() - 5);
+    let currentDateFormat = currentDate.toISOString().split("T")[0];
+
+    doneCardsReverse.forEach( c => {
+        if( c.name.endsWith("-----") ){
+            day++;
+            ixDate = datesToGraph.filter(d => d.ix == day);
+            pointsFinishByDates[ixDate[0].d] = pointsByDay;
+            pointsByDay = 0;
+            return;
+        }
+
+        if( c.labels.length == 0 ){
+            return;
+        }
+
+        if( excludeCard(c, doneList, validLabels, []) ){
+            return;
+        }
+
+        let points = getPointsCard(c.name);
+        pointsByDay += points*1;
+
+        doneCardsByDate.push({
+            points: points == null ? 0 : points,
+            dateDone: ixDate,
+            name: c.name,
+            labels: c.labels.map( l => l.name).join(" / "),
+        });
+    });
+
+    day++;
+    ixDate = datesToGraph.filter(d => d.ix == day);
+
+    if( ixDate.length > 0 ){
+        pointsFinishByDates[ixDate[0].d] = pointsByDay;
+        pointsByDay = 0;
+    }
+
+    console.warn("Cards completadas", doneCardsByDate);
+    console.warn("Puntos finalizados por fecha", pointsFinishByDates);
+    console.error("----------Conteo manual------------");
+ 
+    return pointsFinishByDates;
+}
+
+
 const getTotalPointsInMont = (pointPlaning) => {
     let totalPoints = 0;
     datesToGraph.forEach(day => {
@@ -271,7 +341,7 @@ const printDateToGraph = data => {
 
 const generateG = () => {
     let poinstPlaning = getPointsByDate();
-    let pointReal = getPointsRealByDate();
+    let pointReal = getManualPointsRealByDate();
     let total = getTotalPointsInMont(poinstPlaning);
     totalReal = total;
 
@@ -299,8 +369,8 @@ const generateG = () => {
         const planingDayTotal = total - pointsPlaningDay;
         total = planingDayTotal;
 
-        const pointRealDay = day.d > currentDateFormat ? "" : pointReal[day.d] ? pointReal[day.d] : 0;
-        const planingRealDayTotal = day.d > currentDateFormat ? "" : totalReal - pointRealDay;
+        const pointRealDay = day.d >= currentDateFormat ? "" : pointReal[day.d] ? pointReal[day.d] : 0;
+        const planingRealDayTotal = day.d >= currentDateFormat ? "" : totalReal - pointRealDay;
         totalReal = planingRealDayTotal;
 
         jsonDataToGraph.push({ 
