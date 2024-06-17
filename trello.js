@@ -203,6 +203,7 @@ const getPointsByDate = () => {
     console.warn("Cards no graficadas", cardsExcluded);
     printCardsExcludes(cardsExcluded);
     console.error("Cards fuera de fecha valida", cardsOutOfDate);
+    printCardsWithError( cardsOutOfDate, "Cards fuera de fechas validas", 'cardsOutOfDate');
     console.warn("Cards no tenidas en cuenta", cardsNoCount); 
     return pointsByDates;
 }
