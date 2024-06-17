@@ -180,7 +180,7 @@ const getPointsByDate = () => {
         let ixDate = dateTmp.toISOString().split("T")[0];
 
         if( !datesToGraph.find( d => d.d == ixDate) ){
-            cardsOutOfDate.push({name:c.name, labels : c.labels.map( l => l.name).join(" / ")});
+            cardsOutOfDate.push({name:c.name, labels : c.labels.map( l => l.name).join(" / ")}, labelsList : c.labels, members: c.idMembers, url: c.url});
         }
 
         if( pointsByDates[ixDate] ){
