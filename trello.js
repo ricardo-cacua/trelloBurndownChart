@@ -37,7 +37,7 @@ const datesToGraph = [
 
 const getPointsCard = name => {
     // const regex = /\((\d+)\)/; // Expresión regular para buscar números entre paréntesis
-    const regex = /^\((\d+(\,\d+)?)\)/;
+    const regex = /^\((\d+(\.\d+)?)\)/;
     const resultado = regex.exec(name);
     if( resultado == null ){
         return null; 
@@ -65,10 +65,16 @@ const printCardsWithError = (listCards, title, idContainer) => {
     let html = `<legend>${title}</legend>`;
 
     listCards.forEach(c => {
+        let htmlDate = "";
+        if( c.date ){
+            htmlDate = `<b>Fecha:</b> ${c.date} `;
+        }
+
         html += `<div class="card-error">
             <b>Nombre</b> <a href="${c.url}" target="_blank"> ${c.name} </a>
             <b>Labels</b> <span>${c.labels}</span>
             <b>Members</b> ${c.members.map(m => dataTrelloBoard.members.find(ml => ml.id == m).fullName).join(', ')}
+            ${htmlDate}
         </div>`
     });
 
@@ -114,23 +120,34 @@ const excludeCard = (card, validList, validLabels, cardsExcludedTemp) => {
     }
 
     if( card.labels.length == 0){
-        cardsExcludedTemp.push({name:card.name, labels : card.labels.map( l => l.name).join(" / ")});
+        cardsExcludedTemp.push( addCardToArrayControl(card) );
         return true;
     }
 
     const lablesTemp = card.labels.map(l => l.name );
     if( lablesTemp.includes("Bugs") ){
-        cardsExcludedTemp.push({name:card.name, labels : card.labels.map( l => l.name).join(" / ")});
+        cardsExcludedTemp.push( addCardToArrayControl(card) );
         return true;
     }
 
     // Verifica que la tarjeta tenga los labels validos
     if( !lablesTemp.some(l => validLabels.has(l))){
-        cardsExcludedTemp.push({ name: card.name, labels: card.labels.map(l => l.name).join(" / ") });
+        cardsExcludedTemp.push( addCardToArrayControl(card) );
         return true;
     }
 
     return false;
+}
+
+const addCardToArrayControl = card => {
+    return {
+        name: card.name,
+        labels: card.labels.map(l => l.name).join(" / "),
+        labelsList: card.labels,
+        members: card.idMembers,
+        url: card.url,
+        date: card.date,
+    }
 }
 
 const getPointsByDate = () => {
@@ -162,7 +179,7 @@ const getPointsByDate = () => {
         }
 
         if(points == null ){
-            cardsWithoutPoint.push({name:c.name, labels : c.labels.map( l => l.name).join(" / "), labelsList : c.labels, members: c.idMembers, url: c.url});
+            cardsWithoutPoint.push (addCardToArrayControl(c) );
         }
 
         // Solo tengo en cuenta las tarjetas con fecha de terminación planeada.
@@ -170,7 +187,7 @@ const getPointsByDate = () => {
             if(points != null ){
                 cardsWithPointAndWithoutDate.push({name:c.name, labels : c.labels.map( l => l.name).join(" / ")});
             }
-            cardsWithoutDate.push({name:c.name, labels : c.labels.map( l => l.name).join(" / "), labelsList : c.labels, members: c.idMembers, url: c.url});
+            cardsWithoutDate.push( addCardToArrayControl(c) );
             return;
         }
 
@@ -185,7 +202,7 @@ const getPointsByDate = () => {
         let ixDate = dateTmp.toISOString().split("T")[0];
 
         if( !datesToGraph.find( d => d.d == ixDate) ){
-            cardsOutOfDate.push({name:c.name, labels : c.labels.map( l => l.name).join(" / "), labelsList : c.labels, members: c.idMembers, url: c.url});
+            cardsOutOfDate.push( addCardToArrayControl(c) );
         }
 
         if( pointsByDates[ixDate] ){
@@ -206,15 +223,11 @@ const getPointsByDate = () => {
     console.error("Cards con fecha, sin puntos", cardsWithoutPointAndWithDate);
     console.error("Cards sin fecha, con puntos", cardsWithPointAndWithoutDate);
     console.warn("Cards no graficadas", cardsExcluded);
-    printCardsExcludes(cardsExcluded);
+    printCardsWithError(cardsExcluded, "Cards no graficadas", 'cardsExcluded');
     console.error("Cards fuera de fecha valida", cardsOutOfDate);
     printCardsWithError( cardsOutOfDate, "Cards fuera de fechas validas", 'cardsOutOfDate');
     console.warn("Cards no tenidas en cuenta", cardsNoCount); 
     return pointsByDates;
-}
-
-const printCardsExcludes = cardsExcluded => {
-    let a = 1;
 }
 
 const getDoneList = () => dataTrelloBoard.lists.filter( l => l.name.indexOf("(Done)") !== -1 && l.closed == false ).map( l => l.id); 
@@ -411,6 +424,7 @@ const generateG = () => {
     })
 
     printDateToGraph(jsonDataToGraph);
+    generateGrafica();
 }
 
 window.addEventListener("load", function() {
@@ -426,3 +440,84 @@ window.addEventListener("load", function() {
 });
 
 // https://codesandbox.io/s/line-chart-with-vanilla-js-and-chartjs-h564y
+
+//------------------------------------------------
+const generateGrafica = () => {
+    const PointLabelPlugin = {
+        id: 'pointLabels',
+        afterDatasetsDraw: function(chart) {
+            const ctx = chart.ctx;
+    
+            chart.data.datasets.forEach((dataset, i) => {
+                const meta = chart.getDatasetMeta(i);
+                if (!meta.hidden) {
+                    const isTop = i === 0; // Determina si es la primera línea (arriba) o la segunda línea (abajo)
+                    const offset = isTop ? -10 : 20; // Ajuste de posición vertical
+    
+                    meta.data.forEach((element, index) => {
+                        const posX = element.x;
+                        const posY = element.y + offset; // Ajusta la posición vertical
+    
+                        ctx.save();
+                        ctx.fillStyle = isTop ? 'rgb(234 67 53)' : 'rgb(66 133 244)'; // Color de la etiqueta de punto
+                        const value = dataset.data[index];
+                        ctx.fillText(value, posX, posY);
+                        ctx.restore();
+                    });
+                }
+            });
+        }
+    };
+
+    const data = {
+        labels: jsonDataToGraph.map(dato => dato.date),
+        datasets: [
+            {
+                label: 'Real',
+                data: jsonDataToGraph.filter(dato => dato.totalPointReal!="").map(dato => dato.totalPointReal),
+                fill: false,
+                borderColor: 'rgb(234 67 53)',
+                tension: 0.1
+            },
+            {
+                label: 'Planeado',
+                data: jsonDataToGraph.map(dato => dato.totalPointPlan),
+                fill: false,
+                borderColor: 'rgb(66 133 244)',
+                tension: 0.1
+            },
+           
+        ]
+    };
+    
+    const config = {
+        type: 'line',
+        data,
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                title: {
+                    display: true,
+                    text: 'Burndown chart'
+                },
+                tooltip: {
+                    enabled: false // Desactivamos el tooltip para que no se muestre al pasar el cursor
+                }
+            },
+            interaction: {
+                mode: 'index', // Permite mostrar las etiquetas de punto cuando se interactúa
+                intersect: false
+            }
+        },
+        plugins: [PointLabelPlugin]
+    };
+
+    const ctx = document.getElementById('myChart').getContext('2d');
+
+    
+
+    const myChart = new Chart(ctx, config);
+}

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sprint Pensemos</title>
     <script src="trello.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <style>
     textarea{
@@ -45,6 +46,11 @@
         margin-top: 20px;
     }
 
+    #containerList{
+        display: grid;
+        grid-template-columns: auto auto;
+    }
+
 </style>
 <body>
     <h3>Data exportada de trello: </h3>
@@ -52,9 +58,13 @@
     <button type="button" id="dataTrelloGenerator">Generar</button>
     
     <fieldset id="validLabels"></fieldset>
-    <fieldset id="cardsWithoutDate"></fieldset>
-    <fieldset id="cardsWithoutPoints"></fieldset>
-    <fieldset id="cardsOutOfDate"></fieldset>
+    <div id="containerList">   
+        <fieldset id="cardsWithoutDate"></fieldset>
+        <fieldset id="cardsWithoutPoints"></fieldset>
+        <fieldset id="cardsOutOfDate"></fieldset>
+        <fieldset id="cardsExcluded"></fieldset>
+    </div>
     <div id="dataTableToGraph"></div>
+    <canvas id="myChart"></canvas>
 </body>
 </html>
