@@ -146,7 +146,7 @@ const addCardToArrayControl = card => {
         labelsList: card.labels,
         members: card.idMembers,
         url: card.url,
-        date: card.date,
+        date: card.due,
     }
 }
 
