@@ -222,7 +222,7 @@ const getPointsByDate = () => {
     printCardsWithError( cardsWithoutPoint, "Cards sin punto", 'cardsWithoutPoints');
     console.error("Cards con fecha, sin puntos", cardsWithoutPointAndWithDate);
     console.error("Cards sin fecha, con puntos", cardsWithPointAndWithoutDate);
-    console.warn("Cards no graficadas", cardsExcluded);
+    console.warn("Cards no graficadas(label Bugs, sin label, sin labels validos)", cardsExcluded);
     printCardsWithError(cardsExcluded, "Cards no graficadas", 'cardsExcluded');
     console.error("Cards fuera de fecha valida", cardsOutOfDate);
     printCardsWithError( cardsOutOfDate, "Cards fuera de fechas validas", 'cardsOutOfDate');
