@@ -12,22 +12,31 @@ var dataTrelloBoard = {};
 var dataDates = [];
 
 const datesToGraph = [
-    { ix: 1, d:'2024-12-05'},
-    { ix: 2, d:'2024-12-06'},
-    { ix: 3, d:'2024-12-07'},
-    { ix: 4, d:'2024-12-08'},
-    { ix: 5, d:'2024-12-09'},
-    { ix: 6, d:'2024-12-10'},
-    { ix: 7, d:'2024-12-11'},
-    { ix: 8, d:'2024-12-12'},
-    { ix: 9, d:'2024-12-13'},
-    { ix: 10, d:'2024-12-14'},
-    { ix: 11, d:'2024-12-15'},
-    { ix: 12, d:'2024-12-16'},
-    { ix: 13, d:'2024-12-17'},
-    { ix: 14, d:'2024-12-18'},
-    { ix: 15, d:'2024-12-19'},
-    { ix: 16, d:'2024-12-20'}
+    { ix: 1, d:'2025-03-04'},
+    { ix: 2, d:'2025-03-05'},
+    { ix: 3, d:'2025-03-06'},
+    { ix: 4, d:'2025-03-07'},
+    { ix: 5, d:'2025-03-08'},
+    { ix: 6, d:'2025-03-09'},
+    { ix: 7, d:'2025-03-10'},
+    { ix: 8, d:'2025-03-11'},
+    { ix: 9, d:'2025-03-12'},
+    { ix: 10, d:'2025-03-13'},
+    { ix: 11, d:'2025-03-14'},
+    { ix: 12, d:'2025-03-15'},
+    { ix: 13, d:'2025-03-16'},
+    { ix: 14, d:'2025-03-17'},
+    { ix: 15, d:'2025-03-18'},
+    { ix: 16, d:'2025-03-19'},
+    { ix: 17, d:'2025-03-20'},
+    { ix: 18, d:'2025-03-21'},
+    { ix: 19, d:'2025-03-22'},
+    { ix: 20, d:'2025-03-23'},
+    { ix: 21, d:'2025-03-24'},
+    { ix: 22, d:'2025-03-25'},
+    { ix: 23, d:'2025-03-26'},
+    { ix: 24, d:'2025-03-27'},
+    { ix: 25, d:'2025-03-28'},
 ];
 
 const getPointsCard = name => {
@@ -227,6 +236,57 @@ const getPointsByDate = () => {
 
 const getDoneList = () => dataTrelloBoard.lists.filter( l => l.name.indexOf("(Done)") !== -1 && l.closed == false ).map( l => l.id); 
 
+const getPointsRealByDate2 = () => {
+    const doneList = getDoneList();
+    const validLabels = getValidLabels();
+
+    let doneCardsByDate = [];
+
+    let doneCards = dataTrelloBoard.cards.filter( c => doneList.includes(c.idList) && c.closed == false);
+    let doneCardsReverse = [...doneCards].reverse();
+    
+    let pointsFinishByDates = {};
+
+    doneCardsReverse.forEach( c => {
+        if( excludeCard(c, doneList, validLabels, []) ){
+            return;
+        }
+
+        let dateTmp = new Date(c.dateCompleted);
+        dateTmp.setHours(dateTmp.getHours() - 5);
+        let ixDate = dateTmp.toISOString().split("T")[0];
+
+        let points = getPointsCard(c.name);
+
+        if( c.dateCompleted == null ){
+            console.log(c);
+        }
+
+        doneCardsByDate.push({
+            points: points == null ? 0 : points,
+            dateDone: ixDate,
+            name: c.name,
+            labels: c.labels.map( l => l.name).join(" / "),
+        })
+    });
+
+    doneCardsByDate.forEach( c => {
+        const ixDate = c.dateDone;
+        const points = c.points;
+
+        if( pointsFinishByDates[ixDate] ){
+            pointsFinishByDates[ixDate] += points*1;
+        }
+        else{
+            pointsFinishByDates[ixDate] = points*1;
+        }
+    });
+
+    console.warn("Cards completadas", doneCardsByDate);
+    console.warn("Puntos finalizados por fecha", pointsFinishByDates);
+    return pointsFinishByDates;
+}
+
 const getPointsRealByDate = () => {
     const doneList = getDoneList();
     const validLabels = getValidLabels();
@@ -375,7 +435,8 @@ const printDateToGraph = data => {
 
 const generateG = () => {
     let poinstPlaning = getPointsByDate();
-    let pointReal = getManualPointsRealByDate();
+    //let pointReal = getManualPointsRealByDate();
+    let pointReal = getPointsRealByDate2();
     let total = getTotalPointsInMont(poinstPlaning);
     totalReal = total;
 
