@@ -464,7 +464,7 @@ const generateG = () => {
         const planingDayTotal = total - pointsPlaningDay;
         total = planingDayTotal;
 
-        const pointRealDay = day.d >= currentDateFormat ? "" : pointReal[day.d] ? pointReal[day.d] : 0;
+        const pointRealDay = day.d > currentDateFormat ? "" : pointReal[day.d] ? pointReal[day.d] : 0;
         const planingRealDayTotal = day.d >= currentDateFormat ? "" : totalReal - pointRealDay;
         totalReal = planingRealDayTotal;
 
