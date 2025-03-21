@@ -465,7 +465,7 @@ const generateG = () => {
         total = planingDayTotal;
 
         const pointRealDay = day.d > currentDateFormat ? "" : pointReal[day.d] ? pointReal[day.d] : 0;
-        const planingRealDayTotal = day.d >= currentDateFormat ? "" : totalReal - pointRealDay;
+        const planingRealDayTotal = day.d > currentDateFormat ? "" : totalReal - pointRealDay;
         totalReal = planingRealDayTotal;
 
         jsonDataToGraph.push({ 
