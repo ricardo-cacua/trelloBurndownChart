@@ -41,6 +41,7 @@ const datesToGraph = [
     { ix: 27, d:'2025-04-28'},
     { ix: 28, d:'2025-04-29'},
     { ix: 29, d:'2025-04-30'},
+    { ix: 30, d:'2025-05-02'},
 ];
 
 const getPointsCard = name => {
