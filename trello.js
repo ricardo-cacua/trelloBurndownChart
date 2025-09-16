@@ -166,7 +166,17 @@ const addCardToArrayControl = card => {
     }
 }
 
+const getMembersWithHH = () => {
+    return dataTrelloBoard.members.map(member => ({
+        id: member.id,
+        name: member.fullName,
+        hh: 0, // Valor inicial, puedes actualizarlo luego
+        cards:[],
+    }));
+};
+
 const getPointsByDate = () => {
+    const miebmros = getMembersWithHH();
     const validList = getListToGraph();
     const validLabels = getValidLabels();
     
@@ -184,6 +194,7 @@ const getPointsByDate = () => {
     let totalPointsToGraph = 0;
 
     dataTrelloBoard.cards.forEach( c => {
+
         let points = getPointsCard(c.name);
         if( c.closed != true && validList.includes(c.idList) ){
             totalPoints = totalPoints + (points*1);
@@ -228,6 +239,18 @@ const getPointsByDate = () => {
             pointsByDates[ixDate] = points*1;
         }
 
+        if (Array.isArray(c.idMembers)) {
+            const pointTmp = points/c.idMembers.length;
+            c.idMembers.forEach(memberId => {
+                let member = miebmros.find(m => m.id === memberId);
+                if (member) {
+                    member.hh += Number(pointTmp);
+                    const {name, due, dateCompleted, labels} = c;
+                    member.cards.push({name, due, dateCompleted, labels});
+                }
+            });
+        }
+
         totalPointsToGraph = totalPointsToGraph + (points*1);
     });
     console.warn(`PESO TOTAL : ${totalPoints},  PESO TOTAL SOLO FECHAS : ${totalPointsOnlyDates},  PESO TOTAL A GRAFICAR : ${totalPointsToGraph}`)
@@ -243,6 +266,7 @@ const getPointsByDate = () => {
     console.error("Cards fuera de fecha valida", cardsOutOfDate);
     printCardsWithError( cardsOutOfDate, "Cards fuera de fechas validas", 'cardsOutOfDate');
     console.warn("Cards no tenidas en cuenta", cardsNoCount); 
+     console.warn("Puntos por miebmre", miebmros); 
     return pointsByDates;
 }
 
@@ -265,6 +289,12 @@ const getPointsRealByDate2 = () => {
         }
 
         let dateTmp = new Date(c.dateCompleted);
+
+        // Validar si la tarjeta tiene un label llamado "yesterday"
+        if (c.labels && c.labels.some(label => label.name && label.name.toLowerCase() === "yesterday")) {
+            dateTmp.setDate(dateTmp.getDate() - 1); // Restar 1 día
+        }
+
         dateTmp.setHours(dateTmp.getHours() - 5);
         let ixDate = dateTmp.toISOString().split("T")[0];
 
@@ -476,8 +506,13 @@ const generateG = () => {
         const planingDayTotal = total - pointsPlaningDay;
         total = planingDayTotal;
 
-        const pointRealDay = day.d > currentDateFormat ? "" : pointReal[day.d] ? pointReal[day.d] : 0;
-        const planingRealDayTotal = day.d > currentDateFormat ? "" : totalReal - pointRealDay;
+        const inludeToday = document.querySelector('#includeToday').checked;
+        let pointRealDay = day.d > currentDateFormat ? "" : pointReal[day.d] ? pointReal[day.d] : 0;
+        let planingRealDayTotal = day.d > currentDateFormat ? "" : totalReal - pointRealDay;
+        if( !inludeToday ){
+            pointRealDay = day.d >= currentDateFormat ? "" : pointReal[day.d] ? pointReal[day.d] : 0;
+            planingRealDayTotal = day.d >= currentDateFormat ? "" : totalReal - pointRealDay;
+        }
         totalReal = planingRealDayTotal;
 
         jsonDataToGraph.push({ 
